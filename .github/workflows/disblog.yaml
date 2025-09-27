@@ -13,19 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Generate App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
         
-      - name: Extract Discussion Data
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+        
+      - name: Extract Discussion Data and Convert Markdown
         id: discussion
         run: |
           # Extract data from the webhook payload
@@ -33,150 +29,26 @@ jobs:
           content='${{ github.event.discussion.body }}'
           number="${{ github.event.discussion.number }}"
           
-          # Convert markdown to HTML using a comprehensive approach
-          html_content=$(echo "$content" | awk '
-          BEGIN {
-            in_code_block = 0
-            in_list = 0
-          }
+          # Create a temporary markdown file
+          echo "$content" > temp_content.md
           
-          # Handle code blocks
-          /^```/ {
-            if (in_code_block == 0) {
-              in_code_block = 1
-              print "<pre><code>"
-              next
-            } else {
-              in_code_block = 0
-              print "</code></pre>"
-              next
-            }
-          }
+          # Install marked (a popular markdown parser)
+          npm install -g marked
           
-          # Skip processing if in code block
-          in_code_block == 1 {
-            print $0
-            next
-          }
+          # Convert markdown to HTML
+          html_content=$(marked temp_content.md)
           
-          # Handle headers
-          /^### / {
-            gsub(/^### /, "")
-            print "<h3>" $0 "</h3>"
-            next
-          }
-          /^## / {
-            gsub(/^## /, "")
-            print "<h2>" $0 "</h2>"
-            next
-          }
-          /^# / {
-            gsub(/^# /, "")
-            print "<h1>" $0 "</h1>"
-            next
-          }
+          # Clean up
+          rm temp_content.md
           
-          # Handle task lists
-          /^- \[ \]/ {
-            gsub(/^- \[ \] /, "")
-            if (in_list == 0) {
-              print "<ul class=\"task-list\">"
-              in_list = 1
-            }
-            print "<li class=\"task-list-item\"><input type=\"checkbox\" disabled> " $0 "</li>"
-            next
-          }
-          /^- \[x\]/ {
-            gsub(/^- \[x\] /, "")
-            if (in_list == 0) {
-              print "<ul class=\"task-list\">"
-              in_list = 1
-            }
-            print "<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> " $0 "</li>"
-            next
-          }
-          
-          # Handle unordered lists
-          /^- / {
-            gsub(/^- /, "")
-            if (in_list == 0) {
-              print "<ul>"
-              in_list = 2
-            }
-            print "<li>" $0 "</li>"
-            next
-          }
-          
-          # Handle ordered lists
-          /^[0-9]+\. / {
-            gsub(/^[0-9]+\. /, "")
-            if (in_list == 0) {
-              print "<ol>"
-              in_list = 3
-            }
-            print "<li>" $0 "</li>"
-            next
-          }
-          
-          # Close lists when encountering non-list content
-          in_list > 0 && !/^- / && !/^[0-9]+\. / && !/^- \[/ {
-            if (in_list == 1) print "</ul>"
-            else if (in_list == 2) print "</ul>"
-            else if (in_list == 3) print "</ol>"
-            in_list = 0
-          }
-          
-          # Handle links [text](url)
-          {
-            gsub(/\[([^\]]+)\]\(([^)]+)\)/, "<a href=\"\\2\">\\1</a>")
-          }
-          
-          # Handle bold **text**
-          {
-            gsub(/\*\*([^*]+)\*\*/, "<strong>\\1</strong>")
-          }
-          
-          # Handle italic *text*
-          {
-            gsub(/\*([^*]+)\*/, "<em>\\1</em>")
-          }
-          
-          # Handle inline code `code`
-          {
-            gsub(/`([^`]+)`/, "<code>\\1</code>")
-          }
-          
-          # Handle line breaks (empty lines become paragraph breaks)
-          /^$/ {
-            print "<br>"
-            next
-          }
-          
-          # Regular text - wrap in paragraph if not already in HTML tags
-          !/^</ {
-            print "<p>" $0 "</p>"
-            next
-          }
-          
-          # Default: print as is
-          {
-            print $0
-          }
-          
-          END {
-            # Close any remaining lists
-            if (in_list == 1) print "</ul>"
-            else if (in_list == 2) print "</ul>"
-            else if (in_list == 3) print "</ol>"
-            if (in_code_block == 1) print "</code></pre>"
-          }
-          ')
-          
+          # Save outputs (need to handle multiline content properly)
           echo "title=$title" >> $GITHUB_OUTPUT
+          echo "number=$number" >> $GITHUB_OUTPUT
+          
+          # For multiline content, use EOF delimiter
           echo "content<<EOF" >> $GITHUB_OUTPUT
           echo "$html_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          echo "number=$number" >> $GITHUB_OUTPUT
             
       - name: Create post from template
         env:
@@ -187,7 +59,6 @@ jobs:
           mkdir -p posts
           
           # Download the template from the gist
-          # Assuming the gist URL is in the format: https://gist.githubusercontent.com/username/gist_id/raw/template.html
           curl -s "$GIST_URL" -o template.html
           
           # Read the template file
@@ -195,7 +66,6 @@ jobs:
           
           # Get the discussion data from the previous step
           title="${{ steps.discussion.outputs.title }}"
-          content="${{ steps.discussion.outputs.content }}"
           number="${{ steps.discussion.outputs.number }}"
           
           # Get repository info
@@ -207,7 +77,7 @@ jobs:
           escaped_blog_name=$(printf '%s\n' "$blog_name" | sed 's/[/]/\\&/g' | sed 's/&/\\&/g')
           escaped_repo_path=$(printf '%s\n' "$repo_path" | sed 's/[/]/\\&/g' | sed 's/&/\\&/g')
           
-          # Replace placeholders in the template step by step
+          # Replace placeholders in the template step by step (except content)
           echo "$template_content" | sed "s|{{ discussion\.title }}|$escaped_title|g" > temp_template.html
           
           # Replace the discussion.id placeholder with the discussion number
@@ -219,20 +89,38 @@ jobs:
           # Replace repo.path with the repository path (owner/repo)
           sed "s|{{ repo\.path }}|$escaped_repo_path|g" temp_template3.html > temp_template4.html
           
-          # For content replacement, use a more robust approach
-          # Create the final file by replacing the content placeholder
-          awk -v content="$content" '{
-            gsub(/\{\{ discussion\.content \}\}/, content)
-            print
-          }' temp_template4.html > "posts/${number}.html"
+          # Save the HTML content to a temporary file for safer handling
+          cat << 'CONTENT_EOF' > temp_html_content.html
+          ${{ steps.discussion.outputs.content }}
+          CONTENT_EOF
+          
+          # Use Python to replace the content placeholder (more reliable for complex HTML)
+          python3 << 'PYTHON_EOF'
+          import re
+          
+          # Read the template
+          with open('temp_template4.html', 'r') as f:
+              template = f.read()
+          
+          # Read the HTML content
+          with open('temp_html_content.html', 'r') as f:
+              content = f.read()
+          
+          # Replace the content placeholder
+          final_html = re.sub(r'\{\{\s*discussion\.content\s*\}\}', content, template)
+          
+          # Write the final file
+          with open('posts/${{ steps.discussion.outputs.number }}.html', 'w') as f:
+              f.write(final_html)
+          PYTHON_EOF
           
           # Clean up temporary files
-          rm template.html temp_template.html temp_template2.html temp_template3.html temp_template4.html
+          rm template.html temp_template.html temp_template2.html temp_template3.html temp_template4.html temp_html_content.html
           
       - name: Commit and push new post
         run: |
           git config --local user.email "disblog-bot@noreply.github.com"
-          git config --local user.name "DisBlog Bot Bot"
+          git config --local user.name "DisBlog Bot"
           git add posts/${{ steps.discussion.outputs.number }}.html
           git commit -m "[DISBLOG] 📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
           git push
