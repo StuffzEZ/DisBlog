@@ -57,15 +57,18 @@ jobs:
           # Replace placeholders in the template
           echo "$template_content" | sed "s/{{ discussion\.title }}/$escaped_title/g" > temp_template.html
           
+          # Replace the discussion.id placeholder with the discussion number
+          sed "s/{{ discussion\.id }}/$number/g" temp_template.html > temp_template2.html
+          
           # For content replacement, use a more robust approach
           # Create the final file by replacing the content placeholder
           awk -v content="$content" '{
             gsub(/\{\{ discussion\.content \}\}/, content)
             print
-          }' temp_template.html > "posts/${number}.html"
+          }' temp_template2.html > "posts/${number}.html"
           
           # Clean up temporary files
-          rm template.html temp_template.html
+          rm template.html temp_template.html temp_template2.html
           
       - name: Commit and push new post
         run: |
