@@ -33,11 +33,19 @@ jobs:
           ${{ github.event.discussion.body }}
           MARKDOWN_EOF
           
+          # Pre-process the markdown to escape problematic HTML tags that might break parsing
+          # This converts <script> to &lt;script&gt; etc. to prevent markdown parser issues
+          sed -i 's/<script>/\&lt;script\&gt;/g' temp_content.md
+          sed -i 's/<\/script>/\&lt;\/script\&gt;/g' temp_content.md
+          sed -i 's/<style>/\&lt;style\&gt;/g' temp_content.md
+          sed -i 's/<\/style>/\&lt;\/style\&gt;/g' temp_content.md
+          
           # Install marked (a popular markdown parser)
           npm install -g marked
           
+          # Configure marked to be more lenient and handle mixed content better
           # Convert markdown to HTML
-          html_content=$(marked temp_content.md)
+          html_content=$(marked --gfm --breaks temp_content.md)
           
           # Clean up
           rm temp_content.md
