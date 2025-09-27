@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ blog.name }} | {{ discussion.title }}</title>
+    <title>DisBlog</title>
     <style>
         body {
             background-color: rgb(35, 35, 37);
@@ -41,7 +41,7 @@
         <li>Authorise the <a href="https://github.com/apps/giscus">Giscus bot</a></li>
         <li>In the forked repository, go to Settings > Secrets and Variables > Actions > Variables and create a new Repository Variable</li>
         <li>Name it BLOG_NAME and set its value to the name of your blog</li>
-        <li>Then create another repository variable called TEMPLATE_GIST_URL and set it to the URL of your template (preferably a gist raw url). You can use our public one (which is basic) or change it. <a href="posts/">See the guide on changing it</a></li>
+        <li>Then create another repository variable called TEMPLATE_GIST_URL and set it to the URL of your template (preferably a gist raw url). You can use <a href="https://gist.githubusercontent.com/StuffzEZ/fb3ce8a882fae403392fbaaed5ae7cf9/raw/d6c5072e4130b849960a61f33402dbcf20413db2/template.html">our public one</a> (which is basic) or change it. <a href="posts/4">See the guide on changing it</a></li>
         <li>Create a new discussion category for your posts and set it to the announcements type so only you and collaborators you have invited can use it.</li>
         <p>[OPTIONAL] Delete the other categories</p>
         <li>Go to settings > Pages and enable github pages as deploy from branch > main > / (root folder)</li>
