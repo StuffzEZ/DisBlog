@@ -1,4 +1,4 @@
-name: Create Post from Discussion
+name: DisBlog
 
 on:
   discussion:
@@ -35,6 +35,7 @@ jobs:
       - name: Create post from template
         env:
           GIST_URL: ${{ vars.TEMPLATE_GIST_URL }}  # You'll need to set this as a repository variable
+          BLOG_NAME: ${{ vars.BLOG_NAME }}  # You'll need to set this as a repository variable
         run: |
           # Create posts directory if it doesn't exist
           mkdir -p posts
@@ -51,29 +52,40 @@ jobs:
           content="${{ steps.discussion.outputs.content }}"
           number="${{ steps.discussion.outputs.number }}"
           
+          # Get repository info
+          repo_path="${{ github.repository }}"
+          blog_name="$BLOG_NAME"
+          
           # Escape special characters for sed
           escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
+          escaped_blog_name=$(printf '%s\n' "$blog_name" | sed 's/[[\.*^$()+?{|]/\\&/g')
           
-          # Replace placeholders in the template
+          # Replace placeholders in the template step by step
           echo "$template_content" | sed "s/{{ discussion\.title }}/$escaped_title/g" > temp_template.html
           
           # Replace the discussion.id placeholder with the discussion number
           sed "s/{{ discussion\.id }}/$number/g" temp_template.html > temp_template2.html
+          
+          # Replace blog.name with the blog name from variables
+          sed "s/{{ blog\.name }}/$escaped_blog_name/g" temp_template2.html > temp_template3.html
+          
+          # Replace repo.path with the repository path (owner/repo)
+          sed "s/{{ repo\.path }}/$repo_path/g" temp_template3.html > temp_template4.html
           
           # For content replacement, use a more robust approach
           # Create the final file by replacing the content placeholder
           awk -v content="$content" '{
             gsub(/\{\{ discussion\.content \}\}/, content)
             print
-          }' temp_template2.html > "posts/${number}.html"
+          }' temp_template4.html > "posts/${number}.html"
           
           # Clean up temporary files
-          rm template.html temp_template.html temp_template2.html
+          rm template.html temp_template.html temp_template2.html temp_template3.html temp_template4.html
           
       - name: Commit and push new post
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "disblog-bot@noreply.github.com"
+          git config --local user.name "DisBlog Bot"
           git add posts/${{ steps.discussion.outputs.number }}.html
-          git commit -m "Add post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
+          git commit -m "[DISBLOG] 📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
           git push
