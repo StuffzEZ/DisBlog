@@ -1,4 +1,4 @@
-name: DisBlog
+name: Create Post from Discussion
 
 on:
   discussion:
@@ -13,23 +13,169 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Generate App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
         
       - name: Extract Discussion Data
         id: discussion
         run: |
           # Extract data from the webhook payload
           title=$(echo '${{ github.event.discussion.title }}' | sed 's/"/\\"/g')
-          content=$(echo '${{ github.event.discussion.body }}' | sed 's/"/\\"/g')
+          content='${{ github.event.discussion.body }}'
           number="${{ github.event.discussion.number }}"
           
-          # Convert markdown content to basic HTML (simple approach)
-          # For more complex markdown parsing, you might want to use a proper tool
-          html_content=$(echo "$content" | sed 's/$/\\n/g' | tr -d '\n' | sed 's/\\n/<br>/g')
+          # Convert markdown to HTML using a comprehensive approach
+          html_content=$(echo "$content" | awk '
+          BEGIN {
+            in_code_block = 0
+            in_list = 0
+          }
+          
+          # Handle code blocks
+          /^```/ {
+            if (in_code_block == 0) {
+              in_code_block = 1
+              print "<pre><code>"
+              next
+            } else {
+              in_code_block = 0
+              print "</code></pre>"
+              next
+            }
+          }
+          
+          # Skip processing if in code block
+          in_code_block == 1 {
+            print $0
+            next
+          }
+          
+          # Handle headers
+          /^### / {
+            gsub(/^### /, "")
+            print "<h3>" $0 "</h3>"
+            next
+          }
+          /^## / {
+            gsub(/^## /, "")
+            print "<h2>" $0 "</h2>"
+            next
+          }
+          /^# / {
+            gsub(/^# /, "")
+            print "<h1>" $0 "</h1>"
+            next
+          }
+          
+          # Handle task lists
+          /^- \[ \]/ {
+            gsub(/^- \[ \] /, "")
+            if (in_list == 0) {
+              print "<ul class=\"task-list\">"
+              in_list = 1
+            }
+            print "<li class=\"task-list-item\"><input type=\"checkbox\" disabled> " $0 "</li>"
+            next
+          }
+          /^- \[x\]/ {
+            gsub(/^- \[x\] /, "")
+            if (in_list == 0) {
+              print "<ul class=\"task-list\">"
+              in_list = 1
+            }
+            print "<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> " $0 "</li>"
+            next
+          }
+          
+          # Handle unordered lists
+          /^- / {
+            gsub(/^- /, "")
+            if (in_list == 0) {
+              print "<ul>"
+              in_list = 2
+            }
+            print "<li>" $0 "</li>"
+            next
+          }
+          
+          # Handle ordered lists
+          /^[0-9]+\. / {
+            gsub(/^[0-9]+\. /, "")
+            if (in_list == 0) {
+              print "<ol>"
+              in_list = 3
+            }
+            print "<li>" $0 "</li>"
+            next
+          }
+          
+          # Close lists when encountering non-list content
+          in_list > 0 && !/^- / && !/^[0-9]+\. / && !/^- \[/ {
+            if (in_list == 1) print "</ul>"
+            else if (in_list == 2) print "</ul>"
+            else if (in_list == 3) print "</ol>"
+            in_list = 0
+          }
+          
+          # Handle links [text](url)
+          {
+            gsub(/\[([^\]]+)\]\(([^)]+)\)/, "<a href=\"\\2\">\\1</a>")
+          }
+          
+          # Handle bold **text**
+          {
+            gsub(/\*\*([^*]+)\*\*/, "<strong>\\1</strong>")
+          }
+          
+          # Handle italic *text*
+          {
+            gsub(/\*([^*]+)\*/, "<em>\\1</em>")
+          }
+          
+          # Handle inline code `code`
+          {
+            gsub(/`([^`]+)`/, "<code>\\1</code>")
+          }
+          
+          # Handle line breaks (empty lines become paragraph breaks)
+          /^$/ {
+            print "<br>"
+            next
+          }
+          
+          # Regular text - wrap in paragraph if not already in HTML tags
+          !/^</ {
+            print "<p>" $0 "</p>"
+            next
+          }
+          
+          # Default: print as is
+          {
+            print $0
+          }
+          
+          END {
+            # Close any remaining lists
+            if (in_list == 1) print "</ul>"
+            else if (in_list == 2) print "</ul>"
+            else if (in_list == 3) print "</ol>"
+            if (in_code_block == 1) print "</code></pre>"
+          }
+          ')
           
           echo "title=$title" >> $GITHUB_OUTPUT
-          echo "content=$html_content" >> $GITHUB_OUTPUT  
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$html_content" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "number=$number" >> $GITHUB_OUTPUT
             
       - name: Create post from template
@@ -85,8 +231,8 @@ jobs:
           
       - name: Commit and push new post
         run: |
-          git config --local user.email "disblog-bot@noreply.github.com"
-          git config --local user.name "DisBlog Bot"
+          git config --local user.email "blog-bot@noreply.github.com"
+          git config --local user.name "Blog Bot"
           git add posts/${{ steps.discussion.outputs.number }}.html
-          git commit -m "[DISBLOG] 📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
+          git commit -m "📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
           git push
