@@ -56,21 +56,22 @@ jobs:
           repo_path="${{ github.repository }}"
           blog_name="$BLOG_NAME"
           
-          # Escape special characters for sed
-          escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
-          escaped_blog_name=$(printf '%s\n' "$blog_name" | sed 's/[[\.*^$()+?{|]/\\&/g')
+          # Escape special characters for sed (more reliable approach)
+          escaped_title=$(printf '%s\n' "$title" | sed 's/[/]/\\&/g' | sed 's/&/\\&/g')
+          escaped_blog_name=$(printf '%s\n' "$blog_name" | sed 's/[/]/\\&/g' | sed 's/&/\\&/g')
+          escaped_repo_path=$(printf '%s\n' "$repo_path" | sed 's/[/]/\\&/g' | sed 's/&/\\&/g')
           
           # Replace placeholders in the template step by step
-          echo "$template_content" | sed "s/{{ discussion\.title }}/$escaped_title/g" > temp_template.html
+          echo "$template_content" | sed "s|{{ discussion\.title }}|$escaped_title|g" > temp_template.html
           
           # Replace the discussion.id placeholder with the discussion number
-          sed "s/{{ discussion\.id }}/$number/g" temp_template.html > temp_template2.html
+          sed "s|{{ discussion\.id }}|$number|g" temp_template.html > temp_template2.html
           
           # Replace blog.name with the blog name from variables
-          sed "s/{{ blog\.name }}/$escaped_blog_name/g" temp_template2.html > temp_template3.html
+          sed "s|{{ blog\.name }}|$escaped_blog_name|g" temp_template2.html > temp_template3.html
           
           # Replace repo.path with the repository path (owner/repo)
-          sed "s/{{ repo\.path }}/$repo_path/g" temp_template3.html > temp_template4.html
+          sed "s|{{ repo\.path }}|$escaped_repo_path|g" temp_template3.html > temp_template4.html
           
           # For content replacement, use a more robust approach
           # Create the final file by replacing the content placeholder
