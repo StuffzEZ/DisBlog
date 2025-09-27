@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stufz | Customising the default public page template</title>
+    <style>
+        body {
+            background-color: rgb(35, 35, 37);
+            font-family: sans-serif;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        hr {
+            width: 800px;
+        }
+
+        span {
+            color: rgb(134, 134, 134);
+        }
+
+        div .marbot30 {
+            margin-bottom: 30px;
+        }
+
+        a {
+            color: aquamarine;
+        }
+    </style>
+</head>
+<body>
+    <h1>Customising the default public page template</h1>
+    <span class="subtitle">Stufz</span>
+    <div class="marbot30"></div>
+    <hr>
+    <p><p><a href="https://gist.githubusercontent.com/StuffzEZ/fb3ce8a882fae403392fbaaed5ae7cf9/raw/0f661a9a12a3d9825cb830710af858f37e9d4838/newtemplate.html">View the public template here</a></p>
+<p>To customise the template, please make sure you dont remove any of the existing elements and don&#39;t do the following things:</p>
+<ul>
+<li>Remove the &lt;script&gt; tag - this is for comments</li>
+<li>Don&#39;t change/remove the things in curly brackets (eg. {{ discussion.id }} )</li>
+</ul>
+<h3>Tags</h3>
+<p>{{ discussion.id }} - The discussion ID<br>{{ discussion.title }} - The discussion Title<br>{{ discussion.content }} - The discussion content<br>{{ repo.path }} - The repository path<br>{{ blog.name }} - The name of the blog (set as a variable)</p>
+</p>
+    <script src="https://giscus.app/client.js"
+        data-repo="StuffzEZ/DisBlog"
+        data-mapping="number"
+        data-term="10"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="preferred_color_scheme"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</body>
+</html>
