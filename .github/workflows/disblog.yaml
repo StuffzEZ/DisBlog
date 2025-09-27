@@ -1,4 +1,4 @@
-name: Create Post from Discussion
+name: DisBlog
 
 on:
   discussion:
@@ -231,8 +231,8 @@ jobs:
           
       - name: Commit and push new post
         run: |
-          git config --local user.email "blog-bot@noreply.github.com"
-          git config --local user.name "Blog Bot"
+          git config --local user.email "disblog-bot@noreply.github.com"
+          git config --local user.name "DisBlog Bot Bot"
           git add posts/${{ steps.discussion.outputs.number }}.html
-          git commit -m "📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
+          git commit -m "[DISBLOG] 📝 Add blog post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
           git push
