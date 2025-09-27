@@ -26,11 +26,12 @@ jobs:
         run: |
           # Extract data from the webhook payload
           title=$(echo '${{ github.event.discussion.title }}' | sed 's/"/\\"/g')
-          content='${{ github.event.discussion.body }}'
           number="${{ github.event.discussion.number }}"
           
-          # Create a temporary markdown file
-          echo "$content" > temp_content.md
+          # Create a temporary markdown file using a here document to avoid shell interpretation
+          cat << 'MARKDOWN_EOF' > temp_content.md
+          ${{ github.event.discussion.body }}
+          MARKDOWN_EOF
           
           # Install marked (a popular markdown parser)
           npm install -g marked
