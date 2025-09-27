@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A GitHub Powered Blogging Platform Where You Can Make A Post By Creating A New Discussion">
     <meta name="google-site-verification" content="7YiubERgaN8UtgdeR5wA3DPIY8cN4lQLJF37hXYNMSw" />
     <title>DisBlog</title>
     <style>
@@ -36,17 +37,18 @@
     <span class="subtitle">A new way to host blogs on GitHub</span>
     <div class="marbot30"></div>
     <hr>
+    <p>DisBlog is a Blog platform powered by GitHub discussions on your repo. You can post things by creating a discussion and it supports markdown formatting.</p>
     <p>To get DisBlog, <a href="https://github.com/StuffzEZ/DisBlog/fork">fork the repository</a> then follow the steps below</p>
     <ol style="text-align: center; list-style-position: inside; padding-left: 0;">
         <li>Enable discussions on that repository</li>
         <li>Authorise the <a href="https://github.com/apps/giscus">Giscus bot</a></li>
         <li>In the forked repository, go to Settings > Secrets and Variables > Actions > Variables and create a new Repository Variable</li>
         <li>Name it BLOG_NAME and set its value to the name of your blog</li>
-        <li>Then create another repository variable called TEMPLATE_GIST_URL and set it to the URL of your template (preferably a gist raw url). You can use <a href="https://gist.githubusercontent.com/StuffzEZ/fb3ce8a882fae403392fbaaed5ae7cf9/raw/0f661a9a12a3d9825cb830710af858f37e9d4838/newtemplate.html">our public one</a> (which is basic) or change it. <a href="posts/4">See the guide on changing it</a></li>
+        <li>Then create another repository variable called TEMPLATE_GIST_URL and set it to the URL of your template (preferably a gist raw url). You can use <a href="https://gist.githubusercontent.com/StuffzEZ/fb3ce8a882fae403392fbaaed5ae7cf9/raw/0f661a9a12a3d9825cb830710af858f37e9d4838/newtemplate.html">our public one</a> (which is basic) or change it. <a href="posts/10">See the guide on changing it</a></li>
         <li>Create a new discussion category for your posts and set it to the announcements type so only you and collaborators you have invited can use it.</li>
         <p>[OPTIONAL] Delete the other categories</p>
         <li>Go to settings > Pages and enable github pages as deploy from branch > main > / (root folder)</li>
-        <li>Create a discussion and go to YOURUSERNAME.github.io/posts/DISCUSSION_NUMBER</li>
+        <li>Create a discussion (in markdown format) and go to YOURUSERNAME.github.io/posts/DISCUSSION_NUMBER</li>
         <li>Then if you see something there in 5-10 minutes, DisBlog is working! If not, please raise an issue.</li>
     </ol>
 </body>
