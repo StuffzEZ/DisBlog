@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ blog.name }} | {{ discussion.title }}</title>
+    <style>
+        body {
+            background-color: rgb(35, 35, 37);
+            font-family: sans-serif;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        hr {
+            width: 800px;
+        }
+
+        span {
+            color: rgb(134, 134, 134);
+        }
+
+        div .marbot30 {
+            margin-bottom: 30px;
+        }
+
+        a {
+            color: aquamarine;
+        }
+    </style>
+</head>
+<body>
+    <h1>DisBlog</h1>
+    <span class="subtitle">A new way to host blogs on GitHub</span>
+    <div class="marbot30"></div>
+    <hr>
+    <p>To get DisBlog, <a href="https://github.com/StuffzEZ/DisBlog/fork">fork the repository</a> then follow the steps below</p>
+    <ol style="text-align: center; list-style-position: inside; padding-left: 0;">
+        <li>Enable discussions on that repository</li>
+        <li>Authorise the <a href="https://github.com/apps/giscus">Giscus bot</a></li>
+        <li>In the forked repository, go to Settings > Secrets and Variables > Actions > Variables and create a new Repository Variable</li>
+        <li>Name it BLOG_NAME and set its value to the name of your blog</li>
+        <li>Then create another repository variable called TEMPLATE_GIST_URL and set it to the URL of your template (preferably a gist raw url). You can use our public one (which is basic) or change it. <a href="posts/">See the guide on changing it</a></li>
+        <li>Create a new discussion category for your posts and set it to the announcements type so only you and collaborators you have invited can use it.</li>
+        <p>[OPTIONAL] Delete the other categories</p>
+        <li>Go to settings > Pages and enable github pages as deploy from branch > main > / (root folder)</li>
+        <li>Create a discussion and go to YOURUSERNAME.github.io/posts/DISCUSSION_NUMBER</li>
+        <li>Then if you see something there in 5-10 minutes, DisBlog is working! If not, please raise an issue.</li>
+    </ol>
+</body>
+</html>
