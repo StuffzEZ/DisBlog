@@ -1,0 +1,76 @@
+name: Create Post from Discussion
+
+on:
+  discussion:
+    types: [created]
+
+permissions:
+  contents: write
+  discussions: read
+
+jobs:
+  create-post:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Extract Discussion Data
+        id: discussion
+        run: |
+          # Extract data from the webhook payload
+          title=$(echo '${{ github.event.discussion.title }}' | sed 's/"/\\"/g')
+          content=$(echo '${{ github.event.discussion.body }}' | sed 's/"/\\"/g')
+          number="${{ github.event.discussion.number }}"
+          
+          # Convert markdown content to basic HTML (simple approach)
+          # For more complex markdown parsing, you might want to use a proper tool
+          html_content=$(echo "$content" | sed 's/$/\\n/g' | tr -d '\n' | sed 's/\\n/<br>/g')
+          
+          echo "title=$title" >> $GITHUB_OUTPUT
+          echo "content=$html_content" >> $GITHUB_OUTPUT  
+          echo "number=$number" >> $GITHUB_OUTPUT
+            
+      - name: Create post from template
+        env:
+          GIST_URL: ${{ vars.TEMPLATE_GIST_URL }}  # You'll need to set this as a repository variable
+        run: |
+          # Create posts directory if it doesn't exist
+          mkdir -p posts
+          
+          # Download the template from the gist
+          # Assuming the gist URL is in the format: https://gist.githubusercontent.com/username/gist_id/raw/template.html
+          curl -s "$GIST_URL" -o template.html
+          
+          # Read the template file
+          template_content=$(cat template.html)
+          
+          # Get the discussion data from the previous step
+          title="${{ steps.discussion.outputs.title }}"
+          content="${{ steps.discussion.outputs.content }}"
+          number="${{ steps.discussion.outputs.number }}"
+          
+          # Escape special characters for sed
+          escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
+          
+          # Replace placeholders in the template
+          echo "$template_content" | sed "s/{{ discussion\.title }}/$escaped_title/g" > temp_template.html
+          
+          # For content replacement, use a more robust approach
+          # Create the final file by replacing the content placeholder
+          awk -v content="$content" '{
+            gsub(/\{\{ discussion\.content \}\}/, content)
+            print
+          }' temp_template.html > "posts/${number}.html"
+          
+          # Clean up temporary files
+          rm template.html temp_template.html
+          
+      - name: Commit and push new post
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add posts/${{ steps.discussion.outputs.number }}.html
+          git commit -m "Add post from discussion #${{ steps.discussion.outputs.number }}: ${{ steps.discussion.outputs.title }}" || exit 0
+          git push
